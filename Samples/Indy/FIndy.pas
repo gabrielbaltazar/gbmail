@@ -4,11 +4,13 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, GBMail.Interfaces, GBMail.Indy;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  GBMail.Interfaces, Vcl.StdCtrls;
 
 type
   TForm1 = class(TForm)
-    procedure FormCreate(Sender: TObject);
+    Button1: TButton;
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -22,28 +24,25 @@ implementation
 
 {$R *.dfm}
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TForm1.Button1Click(Sender: TObject);
 var
-  mail : IGBMail;
+  LMail : IGBMail;
 begin
-  mail := TGBMailIndy.New;
-  mail.Server
-        .&Begin
-            .Host('smtp.gmail.com')
-            .Port(587)
-            .Username('email@gmail.com')
-            .Password('*********')
-            .UseSSL(True)
-            .UseTLS(True)
-            .RequireAuthentication(True)
-        .&End
-      .From('gabrielbaltazar.f1@gmail.com')
-      .AddRecipient('gabrielbaltazar.f1@gmail.com')
-      .Subject('teste')
-      .Message('Oi Gabriel')
-      .AddAttachment('C:\Users\gabriel.baltazar\Documents\CnWizards\Scripts.xml')
-      .AddAttachment('C:\Users\gabriel.baltazar\Documents\CnWizards\FeedCfg.xml')
-      .Send;
+  LMail := GetMailDefault;
+  LMail.Server
+      .Host('smtp.gmail.com')
+      .Port(587)
+      .Username('email@gmail.com')
+      .Password('*********')
+      .UseSSL(True)
+      .UseTLS(True)
+      .RequireAuthentication(True)
+    .&End
+    .From('No-Reply Test')
+    .AddRecipient('recipient@email.com')
+    .Subject('test mail')
+    .Message('Hi Test')
+    .Send;
 end;
 
 end.

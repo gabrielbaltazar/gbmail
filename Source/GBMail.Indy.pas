@@ -1,241 +1,222 @@
 unit GBMail.Indy;
-
 interface
-
-uses GBMail.Interfaces, GBMail.Base, IdSMTP, IdMessage, IdSSLOpenSSL,
-     IdExplicitTLSClientServerBase,  IdText, IdAttachmentFile,
-     System.SysUtils, System.Classes, IdAttachment, IdAttachmentMemory;
-
+uses
+  GBMail.Interfaces,
+  GBMail.Base,
+  IdSMTP,
+  IdMessage,
+  IdSSLOpenSSL,
+  IdExplicitTLSClientServerBase,
+  IdText,
+  IdAttachment,
+  IdAttachmentFile,
+  IdAttachmentMemory,
+  System.SysUtils,
+  System.Classes;
 type
   EGBMailIndyException = class(EGBMailException);
-
   TGBMailIndy = class(TGBMailBase, IGBMail)
   private
-    procedure configureMessage (const msg  : TIdMessage);
-    procedure ConfigureSmtp    (const smtp : TIdSMTP);
-    procedure AddToRecipients  (const msg  : TIdMessage);
-    procedure AddCcRecipients  (const msg  : TIdMessage);
-    procedure AddBccRecipients (const msg  : TIdMessage);
-    procedure AddFrom          (const msg  : TIdMessage);
-    procedure AddAttachments   (const msg  : TIdMessage);
-    procedure AddHtmlFile      (const msg  : TIdMessage);
-    procedure AddBody          (const msg  : TIdMessage);
-
+    procedure ConfigureMessage(const AMessage: TIdMessage);
+    procedure ConfigureSmtp(const ASMTP: TIdSMTP);
+    procedure AddToRecipients(const AMessage: TIdMessage);
+    procedure AddCcRecipients(const AMessage: TIdMessage);
+    procedure AddBccRecipients(const AMessage: TIdMessage);
+    procedure AddFrom(const AMessage: TIdMessage);
+    procedure AddAttachments(const AMessage: TIdMessage);
+    procedure AddHtmlFile(const AMessage: TIdMessage);
+    procedure AddBody(const AMessage: TIdMessage);
   protected
-    procedure InitializeISO88591(var VHeaderEncoding: Char; var VCharSet: string);
-
+    procedure InitializeISO88591(var AHeaderEncoding: Char; var ACharSet: string);
   public
-
-    function Send: IGBMail; override;
     class function New: IGBMail;
-
-end;
-
+    function Send: IGBMail; override;
+  end;
 implementation
-
 { TGBMailIndy }
-
-procedure TGBMailIndy.AddAttachments(const msg: TIdMessage);
+procedure TGBMailIndy.AddAttachments(const AMessage: TIdMessage);
 var
-  i         : Integer;
-  attachment: TIdAttachmentFile;
-  attachmentMemory: TIdAttachmentMemory;
-  name: String;
+  I: Integer;
+  LAttachment: TIdAttachmentFile;
+  LAttachmentMemory: TIdAttachmentMemory;
+  LName: string;
 begin
-  for i := 0 to Pred(GetAttachments.Count) do
+  for I := 0 to Pred(FAttachments.Count) do
   begin
-    if FileExists(getAttachments[i]) then
+    if FileExists(FAttachments[I]) then
     begin
-      attachment := TIdAttachmentFile.Create(msg.MessageParts, GetAttachments[i]);
-      attachment.Headers.Add(Format('Content-ID: <%s>',
-        [ExtractFileName(GetAttachments[i])]));
+      LAttachment := TIdAttachmentFile.Create(AMessage.MessageParts, FAttachments[I]);
+      LAttachment.Headers.Add(Format('Content-ID: <%s>',
+        [ExtractFileName(FAttachments[I])]));
     end;
   end;
-
-  for name in getAttachmentsMemory.Keys do
+  for LName in FAttachmentsStream.Keys do
   begin
-    attachmentMemory := TIdAttachmentMemory.Create(msg.MessageParts, getAttachmentsMemory.Items[name]);
-    attachmentMemory.FileName := name;
+    LAttachmentMemory := TIdAttachmentMemory.Create(AMessage.MessageParts, FAttachmentsStream.Items[LName]);
+    LAttachmentMemory.FileName := LName;
   end;
 end;
-
-procedure TGBMailIndy.AddBccRecipients(const msg: TIdMessage);
+procedure TGBMailIndy.AddBccRecipients(const AMessage: TIdMessage);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(getBCcRecipients.Count) do
+  for I := 0 to Pred(FBCcRecipients.Count) do
   begin
-    with msg.BccList.Add do
+    with AMessage.BccList.Add do
     begin
-      Address := getBCcRecipients.Names[i];
-      Name    := getBCcRecipients.ValueFromIndex[i];
+      Address := FBCcRecipients.Names[I];
+      Name := FBCcRecipients.ValueFromIndex[I];
     end;
   end;
 end;
-
-procedure TGBMailIndy.AddBody(const msg: TIdMessage);
+procedure TGBMailIndy.AddBody(const AMessage: TIdMessage);
 var
-  body: TIdText;
+  LBody: TIdText;
 begin
-  body := TIdText.Create(msg.MessageParts);
-  body.Body.Text :=  GetMessage.Text;
-  if getUseHtml then
+  LBody := TIdText.Create(AMessage.MessageParts);
+  LBody.Body.Text := FMessage.Text;
+  if FUseHtml then
   begin
-    body.ContentType := 'text/html';
-    body.CharSet     := 'ISO-8859-1';
-    body.ContentTransfer := '16bit';
+    LBody.ContentType := 'text/html';
+    LBody.CharSet := 'ISO-8859-1';
+    LBody.ContentTransfer := '16bit';
   end
   else
-    body.ContentType := 'text/plain';
+    LBody.ContentType := 'text/plain';
 end;
-
-procedure TGBMailIndy.AddCcRecipients(const msg: TIdMessage);
+procedure TGBMailIndy.AddCcRecipients(const AMessage: TIdMessage);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(getCcRecipients.Count) do
-    with msg.CCList.Add do
+  for I := 0 to Pred(FCcRecipients.Count) do
+    with AMessage.CCList.Add do
     begin
-      Address := getCcRecipients.Names[i];
-      Name    := getCcRecipients.ValueFromIndex[i];
+      Address := FCcRecipients.Names[I];
+      Name := FCcRecipients.ValueFromIndex[I];
     end;
 end;
-
-procedure TGBMailIndy.AddFrom(const msg: TIdMessage);
+procedure TGBMailIndy.AddFrom(const AMessage: TIdMessage);
 begin
-  msg.From.Address := GetFromAddress;
-  msg.From.Name := GetFromName;
+  AMessage.From.Address := FFromAddress;
+  AMessage.From.Name := FFromName;
 end;
-
-procedure TGBMailIndy.AddHtmlFile(const msg: TIdMessage);
+procedure TGBMailIndy.AddHtmlFile(const AMessage: TIdMessage);
 var
-  i    : Integer;
-  image: TIdAttachment;
-  name : String;
-//  attachmentMemory: TIdAttachmentMemory;
+  I: Integer;
+  LImage: TIdAttachment;
+  LName: string;
 begin
-  for i := 0 to Pred(getHtmlImages.Count) do
+  for I := 0 to Pred(FHtmlImages.Count) do
   begin
-    image := TIdAttachmentFile.Create(msg.MessageParts, getHtmlImages.ValueFromIndex[i]);
-    image.ContentType := 'image/jpeg';
-    image.ContentDisposition := 'inline';
-    image.ExtraHeaders.Values['Content-ID'] := '<' + getHtmlImages.Names[i] + '>';
+    LImage := TIdAttachmentFile.Create(AMessage.MessageParts, FHtmlImages.ValueFromIndex[I]);
+    LImage.ContentType := 'image/jpeg';
+    LImage.ContentDisposition := 'inline';
+    LImage.ExtraHeaders.Values['Content-ID'] := '<' + FHtmlImages.Names[I] + '>';
   end;
-
-  for name in getHtmlImagesMemory.Keys do
+  for LName in FHtmlImagesStream.Keys do
   begin
-    image := TIdAttachmentMemory.Create(msg.MessageParts,
-                            getHtmlImagesMemory.Items[name]);
-    image.ContentType := 'image/jpeg';
-    image.ContentDisposition := 'inline';
-    image.ExtraHeaders.Values['Content-ID'] := '<' + name.Replace('{', '').Replace('}', '') + '>';
+    LImage := TIdAttachmentMemory
+      .Create(AMessage.MessageParts, FHtmlImagesStream.Items[LName]);
+    LImage.ContentType := 'image/jpeg';
+    LImage.ContentDisposition := 'inline';
+    LImage.ExtraHeaders.Values['Content-ID'] := '<' + LName.Replace('{', '').Replace('}', '') + '>';
   end;
 end;
-
-procedure TGBMailIndy.AddToRecipients(const msg: TIdMessage);
+procedure TGBMailIndy.AddToRecipients(const AMessage: TIdMessage);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(getRecipients.Count) do
-    with msg.Recipients.Add do
+  for I := 0 to Pred(FRecipients.Count) do
+    with AMessage.Recipients.Add do
     begin
-      Address := getRecipients.Names[i];
-      Name    := getRecipients.ValueFromIndex[i];
+      Address := FRecipients.Names[I];
+      Name := FRecipients.ValueFromIndex[I];
     end;
 end;
-
-procedure TGBMailIndy.configureMessage(const msg: TIdMessage);
+procedure TGBMailIndy.ConfigureMessage(const AMessage: TIdMessage);
 begin
-  msg.Date        := Now;
-  msg.Subject     := GetSubject;
-  msg.ContentType := 'multipart/mixed';
+  AMessage.Date := Now;
+  AMessage.Subject := FSubject;
+  AMessage.ContentType := 'multipart/mixed';
 //  msg.IsEncoded   := True;
 //  msg.ContentTransferEncoding := '16bit';
-  msg.CharSet     := 'utf-8';
-  msg.Encoding    := meMIME;
+  AMessage.CharSet := 'utf-8';
+  AMessage.Encoding := meMIME;
 //  msg.OnInitializeISO := InitializeISO88591;
 end;
-
-procedure TGBMailIndy.ConfigureSmtp(const smtp: TIdSMTP);
+procedure TGBMailIndy.ConfigureSmtp(const ASMTP: TIdSMTP);
 begin
-  smtp.ConnectTimeout := Server.ConnectTimeOut;
-  smtp.ReadTimeout    := Server.ReadTimeOut;
-  smtp.Host           := Server.Host;
-  smtp.Username       := Server.Username;
-  smtp.Password       := Server.Password;
-  smtp.Port           := Server.Port;
+  ASMTP.ConnectTimeout := Server.ConnectTimeOut;
+  ASMTP.ReadTimeout := Server.ReadTimeOut;
+  ASMTP.Host := Server.Host;
+  ASMTP.Username := Server.Username;
+  ASMTP.Password := Server.Password;
+  ASMTP.Port := Server.Port;
 
   if Server.RequireAuthentication then
-    smtp.AuthType := satDefault
+    ASMTP.AuthType := satDefault
   else
-    smtp.AuthType := satNone;
-
-  smtp.IOHandler := TIdSSLIOHandlerSocketOpenSSL.Create(smtp);
+    ASMTP.AuthType := satNone;
+  ASMTP.IOHandler := TIdSSLIOHandlerSocketOpenSSL.Create(ASMTP);
   if Server.UseSSL then
   begin
-    TIdSSLIOHandlerSocketOpenSSL(smtp.IOHandler).SSLOptions.Method := sslvSSLv23;
-    TIdSSLIOHandlerSocketOpenSSL(smtp.IOHandler).SSLOptions.Mode := sslmClient;
-    smtp.UseTLS := utUseExplicitTLS;
+    TIdSSLIOHandlerSocketOpenSSL(ASMTP.IOHandler).SSLOptions.Method := sslvSSLv23;
+    TIdSSLIOHandlerSocketOpenSSL(ASMTP.IOHandler).SSLOptions.Mode := sslmClient;
+    ASMTP.UseTLS := utUseExplicitTLS;
   end;
-
   if Server.UseTLS then
   begin
-    smtp.UseTLS := utUseRequireTLS;
+    ASMTP.UseTLS := utUseRequireTLS;
 //    TIdSSLIOHandlerSocketOpenSSL(smtp.IOHandler).SSLOptions.SSLVersions := [sslvTLSv1, sslvTLSv1_1, sslvTLSv1_2];
-    TIdSSLIOHandlerSocketOpenSSL(smtp.IOHandler).SSLOptions.Method := sslvTLSv1_2;
-    TIdSSLIOHandlerSocketOpenSSL(smtp.IOHandler).SSLOptions.Mode := sslmClient;
+    TIdSSLIOHandlerSocketOpenSSL(ASMTP.IOHandler).SSLOptions.Method := sslvTLSv1_2;
+    TIdSSLIOHandlerSocketOpenSSL(ASMTP.IOHandler).SSLOptions.Mode := sslmClient;
   end;
 end;
-
-procedure TGBMailIndy.InitializeISO88591(var VHeaderEncoding: Char; var VCharSet: string);
+procedure TGBMailIndy.InitializeISO88591(var AHeaderEncoding: Char; var ACharSet: string);
 begin
-  VCharSet := 'ISO-8859-1';
+  ACharSet := 'ISO-8859-1';
 end;
-
 class function TGBMailIndy.New: IGBMail;
 begin
-  result := Self.create;
+  Result := Self.Create;
 end;
-
 function TGBMailIndy.Send: IGBMail;
 var
-  smtp: TIdSMTP;
-  msg : TIdMessage;
+  LSMTP: TIdSMTP;
+  LMessage: TIdMessage;
 begin
-  result := Self;
-  smtp   := TIdSMTP.Create(nil);
+  Result := Self;
+  LSMTP := TIdSMTP.Create(nil);
   try
     try
-      ConfigureSmtp(smtp);
-      msg := TIdMessage.Create(nil);
+      ConfigureSmtp(LSMTP);
+      LMessage := TIdMessage.Create(nil);
       try
-        configureMessage(msg);
-
-        AddToRecipients(msg);
-        AddCcRecipients(msg);
-        AddBccRecipients(msg);
-        AddFrom(msg);
-        AddAttachments(msg);
-        AddBody(msg);
-        AddHtmlFile(msg);
-
-        smtp.Connect;
+        ConfigureMessage(LMessage);
+        AddToRecipients(LMessage);
+        AddCcRecipients(LMessage);
+        AddBccRecipients(LMessage);
+        AddFrom(LMessage);
+        AddAttachments(LMessage);
+        AddBody(LMessage);
+        AddHtmlFile(LMessage);
+        LSMTP.Connect;
         try
           if Server.RequireAuthentication then
-            smtp.Authenticate;
-          smtp.Send(msg);
+            LSMTP.Authenticate;
+          LSMTP.Send(LMessage);
         finally
-          smtp.Disconnect;
+          LSMTP.Disconnect;
         end;
       finally
-        msg.Free;
+        LMessage.Free;
       end;
     except
       on E: Exception do
         raise EGBMailIndyException.Create(E.Message);
     end;
   finally
-    smtp.Free;
+    LSMTP.Free;
   end;
 end;
 

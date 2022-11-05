@@ -2,163 +2,146 @@ unit GBMail.Base;
 
 interface
 
-uses GBMail.Interfaces, GBMail.Base.Server, System.Classes, System.SysUtils,
-     System.StrUtils, System.Generics.Collections;
+uses
+  GBMail.Interfaces,
+  GBMail.Base.Server,
+  System.Classes,
+  System.SysUtils,
+  System.StrUtils,
+  System.Generics.Collections;
 
-type TGBMailBase = class abstract(TInterfacedObject, IGBMail)
-
-  private
-    FServer        : IGBMailServer;
-    FFromAddress   : string;
-    FFromName      : string;
-    FSubject       : string;
-    FUseHtml       : Boolean;
-    FRecipients    : TStrings;
-    FCcRecipients  : TStrings;
-    FBCcRecipients : TStrings;
-    FMessage       : TStrings;
-    FAttachments   : TStrings;
-    FHtmlImages    : TStringList;
-
-    FAttachmentsStream: TObjectDictionary<String, TMemoryStream>;
-    FHtmlImagesStream: TObjectDictionary<String, TMemoryStream>;
-
+type
+  TGBMailBase = class abstract(TInterfacedObject, IGBMail)
   protected
-    function getFromAddress   : string;
-    function getFromName      : string;
-    function getSubject       : string;
-    function getUseHtml       : Boolean;
-    function getRecipients    : TStrings;
-    function getCcRecipients  : TStrings;
-    function getBCcRecipients : TStrings;
-    function getMessage       : TStrings;
-    function getAttachments   : TStrings;
-    function getHtmlImages    : TStrings;
-    function getHtmlImagesMemory: TObjectDictionary<string, TMemoryStream>;
-    function getAttachmentsMemory: TObjectDictionary<string, TMemoryStream>;
-
+    FServer: IGBMailServer;
+    FFromAddress: string;
+    FFromName: string;
+    FSubject: string;
+    FUseHtml: Boolean;
+    FRecipients: TStrings;
+    FCcRecipients: TStrings;
+    FBCcRecipients: TStrings;
+    FMessage: TStrings;
+    FAttachments: TStrings;
+    FHtmlImages: TStringList;
+    FAttachmentsStream: TObjectDictionary<string, TMemoryStream>;
+    FHtmlImagesStream: TObjectDictionary<string, TMemoryStream>;
     procedure ClearStream;
   public
-    function Server: IGBMailServer;
-
-    function From           (Address: string; Name: String = ''): IGBMail;
-    function AddRecipient   (Address: string; Name: string = ''): IGBMail;
-    function AddCcRecipient (Address: string; Name: string = ''): IGBMail;
-    function AddBccRecipient(Address: string; Name: string = ''): IGBMail;
-    function AddAttachment  (FileName: String): IGBMail; overload;
-    function AddAttachment  (Stream: TMemoryStream; FileName: String): IGBMail; overload;
-
-    function AddHtmlImage   (FileName: String; out ID: String): IGBMail; overload;
-    function AddHtmlImage   (Image: TMemoryStream; out ID: String): IGBMail; overload;
-
-    function UseHtml(Value: Boolean) : IGBMail;
-    function Subject(Value: String)  : IGBMail;
-    function Message(Value: String)  : IGBMail; overload;
-    function Message(Value: TStrings): IGBMail; overload;
-
-    function Send: IGBMail; virtual; abstract;
-
-    constructor create; virtual;
+    constructor Create; virtual;
     class function New: IGBMail;
     destructor Destroy; override;
 
-end;
+    function Server: IGBMailServer;
+    function From(AAddress: string; AName: string = ''): IGBMail;
+    function AddRecipient(AAddress: string; AName: string = ''): IGBMail;
+    function AddCcRecipient(AAddress: string; AName: string = ''): IGBMail;
+    function AddBccRecipient(AAddress: string; AName: string = ''): IGBMail;
+    function AddAttachment(AFileName: string): IGBMail; overload;
+    function AddAttachment(AStream: TMemoryStream; AFileName: string): IGBMail; overload;
+
+    function AddHtmlImage(AFileName: string; out AID: string): IGBMail; overload;
+    function AddHtmlImage(AImage: TMemoryStream; out AID: string): IGBMail; overload;
+
+    function UseHtml(AValue: Boolean): IGBMail;
+    function Subject(AValue: string): IGBMail;
+    function Message(AValue: string): IGBMail; overload;
+    function Message(AValue: TStrings): IGBMail; overload;
+    function Send: IGBMail; virtual; abstract;
+  end;
 
 implementation
 
 { TGBMailBase }
 
-function TGBMailBase.AddAttachment(FileName: String): IGBMail;
+function TGBMailBase.AddAttachment(AFileName: string): IGBMail;
 begin
   Result := Self;
-  if FileExists(FileName) then
-    FAttachments.Add(FileName);
+  if FileExists(AFileName) then
+    FAttachments.Add(AFileName);
 end;
 
-function TGBMailBase.AddAttachment(Stream: TMemoryStream; FileName: String): IGBMail;
+function TGBMailBase.AddAttachment(AStream: TMemoryStream; AFileName: string): IGBMail;
 var
-  name: string;
-  memoryStream: TMemoryStream;
+  LName: string;
+  LStream: TMemoryStream;
 begin
-  result := Self;
-  memoryStream := TMemoryStream.Create;
+  Result := Self;
+  LStream := TMemoryStream.Create;
   try
-    memoryStream.LoadFromStream(Stream);
-    memoryStream.Position := 0;
-
-    name := ExtractFileName(FileName);
-    FAttachmentsStream.AddOrSetValue(name, memoryStream);
+    LStream.LoadFromStream(AStream);
+    LStream.Position := 0;
+    LName := ExtractFileName(AFileName);
+    FAttachmentsStream.AddOrSetValue(LName, LStream);
   except
-    memoryStream.Free;
+    LStream.Free;
     raise;
   end;
 end;
 
-function TGBMailBase.AddBccRecipient(Address, Name: string): IGBMail;
+function TGBMailBase.AddBccRecipient(AAddress, AName: string): IGBMail;
 begin
-  result := Self;
-  FBCcRecipients.Values[Address] := IfThen(Name.IsEmpty, Address, Name);
+  Result := Self;
+  FBCcRecipients.Values[AAddress] := IfThen(AName.IsEmpty, AAddress, AName);
 end;
 
-function TGBMailBase.AddCcRecipient(Address, Name: string): IGBMail;
+function TGBMailBase.AddCcRecipient(AAddress, AName: string): IGBMail;
 begin
-  result := Self;
-  FCcRecipients.Values[Address] := IfThen(Name.IsEmpty, Address, Name);
+  Result := Self;
+  FCcRecipients.Values[AAddress] := IfThen(AName.IsEmpty, AAddress, AName);
 end;
 
-function TGBMailBase.AddHtmlImage(Image: TMemoryStream; out ID: String): IGBMail;
+function TGBMailBase.AddHtmlImage(AImage: TMemoryStream; out AID: string): IGBMail;
 var
-  memoryStream: TMemoryStream;
+  LStream: TMemoryStream;
 begin
-  result := Self;
-  memoryStream := TMemoryStream.Create;
+  Result := Self;
+  LStream := TMemoryStream.Create;
   try
-    memoryStream.LoadFromStream(Image);
-    memoryStream.Position := 0;
-    ID := TGUID.NewGuid.ToString;
-    FHtmlImagesStream.AddOrSetValue(ID, memoryStream);
+    LStream.LoadFromStream(AImage);
+    LStream.Position := 0;
+    AID := TGUID.NewGuid.ToString;
+    FHtmlImagesStream.AddOrSetValue(AID, LStream);
   except
-    memoryStream.Free;
+    LStream.Free;
     raise;
   end;
 end;
 
-function TGBMailBase.AddHtmlImage(FileName: String; out ID: String): IGBMail;
+function TGBMailBase.AddHtmlImage(AFileName: string; out AID: string): IGBMail;
 begin
-  result := Self;
-
-  ID := TGuid.NewGuid.ToString;
-  FHtmlImages.AddPair(ID, FileName);
+  Result := Self;
+  AID := TGuid.NewGuid.ToString;
+  FHtmlImages.AddPair(AID, AFileName);
 end;
 
-function TGBMailBase.AddRecipient(Address, Name: string): IGBMail;
+function TGBMailBase.AddRecipient(AAddress, AName: string): IGBMail;
 begin
-  result := Self;
-  FRecipients.Values[Address] := IfThen(Name.IsEmpty, Address, Name);
+  Result := Self;
+  FRecipients.Values[AAddress] := IfThen(AName.IsEmpty, AAddress, AName);
 end;
 
 procedure TGBMailBase.ClearStream;
 var
-  key: String;
+  LKey: string;
 begin
-  for key in FAttachmentsStream.Keys do
-    FAttachmentsStream.Items[key].Free;
-
-  for key in FHtmlImagesStream.Keys do
-    FHtmlImagesStream.Items[key].Free;
+  for LKey in FAttachmentsStream.Keys do
+    FAttachmentsStream.Items[LKey].Free;
+  for LKey in FHtmlImagesStream.Keys do
+    FHtmlImagesStream.Items[LKey].Free;
 end;
 
-constructor TGBMailBase.create;
+constructor TGBMailBase.Create;
 begin
-  FServer        := TGBMailServerBase.New(Self);
+  FServer := TGBMailServerBase.New(Self);
   FBCcRecipients := TStringList.Create;
-  FCcRecipients  := TStringList.Create;
-  FRecipients    := TStringList.Create;
-  FMessage       := TStringList.Create;
-  FAttachments   := TStringList.Create;
-  FHtmlImages    := TStringList.Create;
-  FAttachmentsStream:= TObjectDictionary<String, TMemoryStream>.create;
-  FHtmlImagesStream:= TObjectDictionary<String, TMemoryStream>.create;
+  FCcRecipients := TStringList.Create;
+  FRecipients := TStringList.Create;
+  FMessage := TStringList.Create;
+  FAttachments := TStringList.Create;
+  FHtmlImages := TStringList.Create;
+  FAttachmentsStream := TObjectDictionary<string, TMemoryStream>.create;
+  FHtmlImagesStream := TObjectDictionary<string, TMemoryStream>.create;
 end;
 
 destructor TGBMailBase.Destroy;
@@ -169,112 +152,51 @@ begin
   FMessage.Free;
   FAttachments.Free;
   FHtmlImages.Free;
-
   ClearStream;
   FAttachmentsStream.Free;
   FHtmlImagesStream.Free;
   inherited;
 end;
 
-function TGBMailBase.From(Address, Name: String): IGBMail;
+function TGBMailBase.From(AAddress, AName: string): IGBMail;
 begin
-  result       := Self;
-  FFromAddress := Address;
-  FFromName    := IfThen(Name.IsEmpty, Address, Name);
+  Result := Self;
+  FFromAddress := AAddress;
+  FFromName := IfThen(AName.IsEmpty, AAddress, AName);
 end;
 
-function TGBMailBase.getAttachments: TStrings;
+function TGBMailBase.Message(AValue: string): IGBMail;
 begin
-  result := FAttachments;
+  Result := Self;
+  FMessage.Text := AValue;
 end;
 
-function TGBMailBase.getAttachmentsMemory: TObjectDictionary<string, TMemoryStream>;
+function TGBMailBase.Message(AValue: TStrings): IGBMail;
 begin
-  result := FAttachmentsStream;
-end;
-
-function TGBMailBase.getBCcRecipients: TStrings;
-begin
-  result := FBCcRecipients;
-end;
-
-function TGBMailBase.getCcRecipients: TStrings;
-begin
-  result := FCcRecipients;
-end;
-
-function TGBMailBase.getFromAddress: string;
-begin
-  Result := FFromAddress;
-end;
-
-function TGBMailBase.getFromName: string;
-begin
-  result := FFromName;
-end;
-
-function TGBMailBase.getHtmlImages: TStrings;
-begin
-  result := FHtmlImages;
-end;
-
-function TGBMailBase.getHtmlImagesMemory: TObjectDictionary<string, TMemoryStream>;
-begin
-  result := FHtmlImagesStream;
-end;
-
-function TGBMailBase.getMessage: TStrings;
-begin
-  result := FMessage;
-end;
-
-function TGBMailBase.getRecipients: TStrings;
-begin
-  result := FRecipients;
-end;
-
-function TGBMailBase.getSubject: string;
-begin
-  result := FSubject;
-end;
-
-function TGBMailBase.getUseHtml: Boolean;
-begin
-  result := FUseHtml;
-end;
-
-function TGBMailBase.Message(Value: String): IGBMail;
-begin
-  result        := Self;
-  FMessage.Text := Value;
-end;
-
-function TGBMailBase.Message(Value: TStrings): IGBMail;
-begin
-  result        := Self;
-  FMessage.Text := Value.Text;
+  Result := Self;
+  FMessage.Text := AValue.Text;
 end;
 
 class function TGBMailBase.New: IGBMail;
 begin
-  result := Self.create;
+  Result := Self.Create;
 end;
 
 function TGBMailBase.Server: IGBMailServer;
 begin
-  result := FServer;
+  Result := FServer;
 end;
 
-function TGBMailBase.Subject(Value: String): IGBMail;
+function TGBMailBase.Subject(AValue: string): IGBMail;
 begin
-  result   := Self;
-  FSubject := Value;
+  Result := Self;
+  FSubject := AValue;
 end;
 
-function TGBMailBase.UseHtml(Value: Boolean) : IGBMail;
+function TGBMailBase.UseHtml(AValue: Boolean) : IGBMail;
 begin
-  Result   := Self;
-  FUseHtml := Value;
+  Result := Self;
+  FUseHtml := AValue;
 end;
 
 end.

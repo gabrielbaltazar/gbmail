@@ -7,7 +7,8 @@ uses
   GBMail.Base.Server in '..\..\Source\GBMail.Base.Server.pas',
   GBMail.Base in '..\..\Source\GBMail.Base.pas',
   GBMail.Indy in '..\..\Source\GBMail.Indy.pas',
-  GBMail.Factory in '..\..\Source\GBMail.Factory.pas';
+  GBMail.Factory in '..\..\Source\GBMail.Factory.pas',
+  GBMail.Outlook in '..\..\Source\GBMail.Outlook.pas';
 
 {$R *.res}
 

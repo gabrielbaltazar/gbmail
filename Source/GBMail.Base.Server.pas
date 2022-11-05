@@ -91,7 +91,7 @@ end;
 function TGBMailServerBase.Host(AValue: string): IGBMailServer;
 begin
   Result := Self;
-  FHost  := AValue;
+  FHost := AValue;
 end;
 
 function TGBMailServerBase.Host: string;

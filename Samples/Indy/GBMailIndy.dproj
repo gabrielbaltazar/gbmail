@@ -108,6 +108,7 @@
         <DCCReference Include="..\..\Source\GBMail.Base.pas"/>
         <DCCReference Include="..\..\Source\GBMail.Indy.pas"/>
         <DCCReference Include="..\..\Source\GBMail.Factory.pas"/>
+        <DCCReference Include="..\..\Source\GBMail.Outlook.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

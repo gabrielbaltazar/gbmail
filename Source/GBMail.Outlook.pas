@@ -2,136 +2,136 @@ unit GBMail.Outlook;
 
 interface
 
-uses GBMail.Interfaces, GBMail.Base, System.SysUtils, System.Classes, Outlook2010,
-     System.Variants;
+uses
+  GBMail.Interfaces,
+  GBMail.Base,
+  Outlook2010,
+  System.SysUtils,
+  System.Classes,
+  System.Variants;
 
 type
   EGBMailOutlookException = class(EGBMailException);
 
   TGBMailOutlook = class(TGBMailBase, IGBMail)
-
   private
     FOpenOutlook: Boolean;
 
-    procedure AddBody          (const email: MailItem);
-    procedure AddToRecipients  (const email: MailItem);
-    procedure AddCcRecipients  (const email: MailItem);
-    procedure AddBccRecipients (const email: MailItem);
-    procedure AddAttachments   (const email: MailItem);
+    procedure AddBody(const AEmail: MailItem);
+    procedure AddToRecipients(const AEmail: MailItem);
+    procedure AddCcRecipients(const AEmail: MailItem);
+    procedure AddBccRecipients(const AEmail: MailItem);
+    procedure AddAttachments(const AEmail: MailItem);
   public
-    function Send: IGBMail; override;
-
-    constructor create(bOpenOutlook: Boolean = False);
-    class function New(bOpenOutlook: Boolean = False): IGBMail;
+    constructor Create(AOpenOutlook: Boolean = False); reintroduce;
+    class function New(AOpenOutlook: Boolean = False): IGBMail;
     destructor Destroy; override;
 
-end;
+    function Send: IGBMail; override;
+  end;
 
 implementation
 
 { TGBMailOutlook }
 
-procedure TGBMailOutlook.AddAttachments(const email: MailItem);
+procedure TGBMailOutlook.AddAttachments(const AEmail: MailItem);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(GetAttachments.Count) do
+  for I := 0 to Pred(FAttachments.Count) do
   begin
-    if FileExists(getAttachments[i]) then
-      email.Attachments.Add(GetAttachments[i], EmptyParam, EmptyParam, EmptyParam);
+    if FileExists(FAttachments[I]) then
+      AEmail.Attachments.Add(FAttachments[I], EmptyParam, EmptyParam, EmptyParam);
   end;
 end;
 
-procedure TGBMailOutlook.AddBccRecipients(const email: MailItem);
+procedure TGBMailOutlook.AddBccRecipients(const AEmail: MailItem);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(GetBccRecipients.Count) do
-    with email.Recipients.Add(GetBccRecipients.Names[i]) do
-      type_ := olBCC;
+  for I := 0 to Pred(FBccRecipients.Count) do
+    AEmail.Recipients.Add(FBccRecipients.Names[I]).type_ := olBCC;
 end;
 
-procedure TGBMailOutlook.AddBody(const email: MailItem);
+procedure TGBMailOutlook.AddBody(const AEmail: MailItem);
 begin
-  if getUseHtml then
+  if FUseHtml then
   begin
-    email.BodyFormat := olFormatHTML;
-    email.HTMLBody   := GetMessage.Text;
+    AEmail.BodyFormat := olFormatHTML;
+    AEmail.HTMLBody := FMessage.Text;
   end
   else
   begin
-    email.BodyFormat := olFormatPlain;
-    email.Body       := GetMessage.Text;
+    AEmail.BodyFormat := olFormatPlain;
+    AEmail.Body := FMessage.Text;
   end;
 end;
 
-procedure TGBMailOutlook.AddCcRecipients(const email: MailItem);
+procedure TGBMailOutlook.AddCcRecipients(const AEmail: MailItem);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(GetCcRecipients.Count) do
-    with email.Recipients.Add(GetCcRecipients.Names[i]) do
-      type_ := olCC;
+  for I := 0 to Pred(FCcRecipients.Count) do
+    AEmail.Recipients.Add(FCcRecipients.Names[I]).type_ := olCC;
 end;
 
-procedure TGBMailOutlook.AddToRecipients(const email: MailItem);
+procedure TGBMailOutlook.AddToRecipients(const AEmail: MailItem);
 var
-  i: Integer;
+  I: Integer;
 begin
-  for i := 0 to Pred(GetRecipients.Count) do
-    with email.Recipients.Add(GetRecipients.Names[i]) do
-      type_ := olTo;
+  for I := 0 to Pred(FRecipients.Count) do
+    AEmail.Recipients.Add(FRecipients.Names[I]).type_ := olTo;
 end;
 
-constructor TGBMailOutlook.create(bOpenOutlook: Boolean);
+constructor TGBMailOutlook.Create(AOpenOutlook: Boolean);
 begin
-  FOpenOutlook := bOpenOutlook;
+  inherited Create;
+  FOpenOutlook := AOpenOutlook;
 end;
 
 destructor TGBMailOutlook.Destroy;
 begin
-
   inherited;
 end;
 
-class function TGBMailOutlook.New(bOpenOutlook: Boolean): IGBMail;
+class function TGBMailOutlook.New(AOpenOutlook: Boolean): IGBMail;
 begin
-  result := Self.create(bOpenOutlook);
+  Result := Self.Create(AOpenOutlook);
 end;
 
 function TGBMailOutlook.Send: IGBMail;
 var
-  outlook : TOutlookApplication;
-  email   : MailItem;
+  LOutlook: TOutlookApplication;
+  LEmail: MailItem;
 begin
-  result  := Self;
-  outlook := TOutlookApplication.Create(nil);
+  Result := Self;
+  LOutlook := TOutlookApplication.Create(nil);
   try
     try
-      email := outlook.CreateItem(olMailItem) As MailItem;
-      email.Subject := GetSubject;
-      email.Importance := olImportanceNormal;
+      LEmail := LOutlook.CreateItem(olMailItem) As MailItem;
+      LEmail.Subject := FSubject;
+      LEmail.Importance := olImportanceNormal;
 
-      AddBody(email);
-      AddToRecipients(email);
-      AddCcRecipients(email);
-      AddBccRecipients(email);
-      AddAttachments(email);
+      AddBody(LEmail);
+      AddToRecipients(LEmail);
+      AddCcRecipients(LEmail);
+      AddBccRecipients(LEmail);
+      AddAttachments(LEmail);
 
-      if email.Recipients.ResolveAll then
+      if LEmail.Recipients.ResolveAll then
       begin
         if FOpenOutlook then
-          email.Display(False)
+          LEmail.Display(False)
         else
-          email.Send;
+          LEmail.Send;
       end
       else
         raise EGBMailOutlookException.Create('Could not send email from Outlook. Check the parameters informed.');
     finally
-      outlook.Disconnect;
+      LOutlook.Disconnect;
     end;
   finally
-    outlook.Free;
+    LOutlook.Free;
   end;
 end;
 

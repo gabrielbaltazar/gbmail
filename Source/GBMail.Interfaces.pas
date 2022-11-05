@@ -13,7 +13,6 @@ type
   IGBMail = interface
     ['{2C44519A-0B71-449D-BC2D-6D429EA37BE3}']
     function Server: IGBMailServer;
-
     function From(AAddress: string; AName: string = ''): IGBMail;
     function AddRecipient(AAddress: string; AName: string = ''): IGBMail;
     function AddCcRecipient(AAddress: string; AName: string = ''): IGBMail;
@@ -34,7 +33,6 @@ type
     ['{05CBBF52-507A-4DD0-9163-F389DB4EB7D5}']
     function &Begin: IGBMailServer;
     function &End: IGBMail;
-
     function Host(AValue: string): IGBMailServer; overload;
     function Port(AValue: Integer): IGBMailServer; overload;
     function Username(AValue: string): IGBMailServer; overload;
